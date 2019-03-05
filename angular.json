@@ -25,7 +25,9 @@
             "styles": [
               "src/styles.css"
             ],
-            "scripts": []
+            "scripts": [
+              "node_modules/jsplumb/dist/js/jsplumb.js"
+            ]
           },
           "configurations": {
             "production": {
