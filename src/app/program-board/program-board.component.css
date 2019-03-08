@@ -6,17 +6,15 @@
   font-weight: bold;
   line-height: 49px;
 }
+.container {
+  position: relative;
+  background: lightgray;
+}
+.box-container{
+  margin-outside: 5%;
+}
 .customBox {
-  margin-top: 5%;
-  padding: 8px 100px;
-  box-shadow: 0 10px 40px 0 #B0C1D9;
   position:absolute;
-}
-
-.alignleft {
-  float: left;
-}
-
-.alignright {
-  float: right;
+  padding: 8px 100px;
+  background-color: yellow;
 }

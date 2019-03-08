@@ -1,4 +1,8 @@
 import {AfterViewInit, Component, OnInit} from '@angular/core';
+import {HttpClient} from '@angular/common/http';
+import {Connections} from 'jsplumb';
+import {ConnectionRequest} from '../../models/connection-request';
+import {GlobalVarService} from '../global-var.service';
 
 declare var jsPlumb: any;
 
@@ -13,49 +17,92 @@ declare var jsPlumb: any;
 export class ProgramBoardComponent implements AfterViewInit {
 
   jsPlumbInstance;
-  showConnectionToggle = false;
-  endpointOptions = {isSource: true, isTarget: true};
-  exampleGreyEndpointOptions = {
+  connections;
+  features;
+  sourcePoint = {
     endpoint: 'Rectangle',
-    paintStyle: {width: 25, height: 21, fill: '#666'},
+    paintStyle: {width: 15, height: 10, fill: '#666'},
     isSource: true,
-    connectorStyle: {stroke: '#666'},
-    isTarget: true
+    connectorStyle: {stroke: '#f44242'},
+    maxConnections: 3,
+    anchor: 'Right'
   };
+  endPoint = {
+    endpoint: 'Dot',
+    paintStyle: {width: 15, height: 10, fill: '#666'},
+    isTarget: true,
+    maxConnections: 3,
+    anchor: 'Left'
+  };
+  connectionRequest: ConnectionRequest;
+
+  constructor(private http: HttpClient, public global: GlobalVarService) {
+    this.connections = new Array();
+    this.features = new Array();
+    this.connectionRequest = new ConnectionRequest();
+  }
 
   ngAfterViewInit() {
     this.jsPlumbInstance = jsPlumb.getInstance();
-    /*
     this.jsPlumbInstance.draggable(['Source', 'Target1', 'Target2']);
-    this.jsPlumbInstance.addEndpoint(['Source', 'Target1', 'Target2'], this.exampleGreyEndpointOptions); */
-    this.jsPlumbInstance.importDefaults({
-      Anchors: ['Left', 'BottomRight']
-    });
+    this.jsPlumbInstance.addEndpoints(['Source', 'Target1', 'Target2'], [this.sourcePoint, this.endPoint]);
+    this.drawDependencies();
   }
 
-  showConnectOnClick() {
-    this.showConnectionToggle = !this.showConnectionToggle;
-    if (this.showConnectionToggle) {
-      this.jsPlumbInstance = jsPlumb.getInstance();
-      this.connectSourceToTargetUsingJSPlumb();
-    } else {
-      this.jsPlumbInstance.reset();
+  //TODO: correct spelling
+  drawDependencies() {
+    this.http.get(this.global.urlApi + 'dependencies').subscribe(dependencies => {
+      for (const dependence of Object.values(dependencies)) {
+        console.log(dependence.sourceId);
+        this.jsPlumbInstance.connect({
+          source: dependence.sourceId,
+          target: dependence.targetId,
+          anchor: ['Right', 'Left']
+        });
+      }
+    });
+  }
+  getFeatures() {
+    this.http.get(this.global.urlApi + 'features').subscribe(featuresGet => {
+      console.log(featuresGet);
+    }, err => {
+      console.error(err);
+    });
+  }
+  createFeature(){
+
+  }
+
+  createTblConnections() {
+    const tblConnections = this.jsPlumbInstance.getAllConnections();
+    if (!Array.isArray(tblConnections)) {
+      console.log('Drakeee ?! Array?!');
+      return;
+    }
+    if (!tblConnections.length) {
+      console.log('No connections');
+      return;
+    }
+    this.connections = [];
+    for (const connection of Object.values(tblConnections)) {
+      this.connections.push({sourceId: connection.sourceId, targetId: connection.targetId});
     }
   }
 
-  connectSourceToTargetUsingJSPlumb() {
-    let labelName;
-    labelName = 'connection';
-    this.jsPlumbInstance.connect({
-      connector: ['Flowchart', {stub: [212, 67], cornerRadius: 1, alwaysRespectStubs: true}],
-      source: 'Source',
-      target: 'Target1',
-      anchor: ['Right', 'Left'],
-      paintStyle: {stroke: '#456', strokeWidth: 4},
-      overlays: [
-        ['Label', {label: labelName, location: 0.5, cssClass: 'connectingConnectorLabel'}]
-      ],
-    });
-
+  saveConnections() {
+    this.createTblConnections();
+    if (!Array.isArray(this.connections)) {
+      console.error('Not a correct array');
+      return;
+    }
+    for (const connection of Object.values(this.connections)) {
+      this.connectionRequest.sourceId = connection.sourceId;
+      this.connectionRequest.targetId = connection.targetId;
+      this.http.post(this.global.urlApi + 'dependencies', this.connectionRequest).subscribe(newConnection => {
+        console.log('The new connection', newConnection);
+      }, error1 => {
+        console.error(error1);
+      });
+    }
   }
 }
