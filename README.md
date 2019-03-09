@@ -7,7 +7,7 @@ Ce document sert de tutoriel afin de créer le prototype.
 Avant de commencer, il faut s'assurer d'avoir Node.js ainsi que NPM installé sur sa machine.
 ## Mise en place
 
-### Installation d'Angular
+### Installation d'Angular (https://github.com/sebibigbob8/programBoard/blob/master/src/assets/angular.png)
   1. Installez le client Angular : `npm install -g @angular/cli`
   2. Créez votre application : `ng new nomDeMonApp`
   3. Rendez-vous dans le dossier de l'application : `cd nomDeMonApp`
