@@ -27,7 +27,7 @@ const appRoutes: Routes = [
   declarations: [
     AppComponent,
     GraphComponent,
-    ProgramBoardComponent
+    ProgramBoardComponent,
   ],
   imports: [
     BrowserModule,

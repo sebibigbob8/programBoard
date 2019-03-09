@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, OnInit} from '@angular/core';
+import {AfterViewChecked, AfterViewInit, Component, OnDestroy, OnInit} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import {Connections} from 'jsplumb';
 import {ConnectionRequest} from '../../models/connection-request';
@@ -19,6 +19,8 @@ export class ProgramBoardComponent implements AfterViewInit {
   jsPlumbInstance;
   connections;
   features;
+  featuresLoaded;
+  alreadyDrag;
   sourcePoint = {
     endpoint: 'Rectangle',
     paintStyle: {width: 15, height: 10, fill: '#666'},
@@ -39,17 +41,20 @@ export class ProgramBoardComponent implements AfterViewInit {
   constructor(private http: HttpClient, public global: GlobalVarService) {
     this.connections = new Array();
     this.features = new Array();
+    this.alreadyDrag = new Array();
     this.connectionRequest = new ConnectionRequest();
+    this.getFeatures();
+    this.featuresLoaded = false;
   }
 
   ngAfterViewInit() {
     this.jsPlumbInstance = jsPlumb.getInstance();
-    this.jsPlumbInstance.draggable(['Source', 'Target1', 'Target2']);
-    this.jsPlumbInstance.addEndpoints(['Source', 'Target1', 'Target2'], [this.sourcePoint, this.endPoint]);
-    this.drawDependencies();
+    /*
+     this.jsPlumbInstance.draggable(['Source', 'Target1', 'Target2']);
+     this.jsPlumbInstance.addEndpoints(['Source', 'Target1', 'Target2'], [this.sourcePoint, this.endPoint]); */
+    // this.drawDependencies();
   }
 
-  //TODO: correct spelling
   drawDependencies() {
     this.http.get(this.global.urlApi + 'dependencies').subscribe(dependencies => {
       for (const dependence of Object.values(dependencies)) {
@@ -62,15 +67,28 @@ export class ProgramBoardComponent implements AfterViewInit {
       }
     });
   }
+
   getFeatures() {
     this.http.get(this.global.urlApi + 'features').subscribe(featuresGet => {
-      console.log(featuresGet);
+      for (const feature of Object.values(featuresGet)) {
+        this.features.push(feature);
+        //this.jsPlumbInstance.addEndpoints(feature.htmlId, [this.sourcePoint, this.endPoint]);
+      }
+      this.featuresLoaded = true;
+      console.log('Array build');
     }, err => {
       console.error(err);
     });
   }
-  createFeature(){
 
+  setParams(htmlId) {
+    const found = this.alreadyDrag.find(function (element) {
+      return element === htmlId;
+    });
+    if (typeof found === 'undefined') {
+      this.jsPlumbInstance.draggable(htmlId);
+      this.alreadyDrag.push(htmlId);
+    }
   }
 
   createTblConnections() {

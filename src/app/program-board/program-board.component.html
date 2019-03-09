@@ -1,26 +1,15 @@
 <div class="container" id="Board">
-  <div *ngFor="let feature of features">
-    <div class="customBox" id={{feature.htmlId}}>
-      {{feature.name}}
+  <ng-container *ngIf="featuresLoaded">
+    <div *ngFor="let feature of this.features">
+      <div class="customBox" id={{feature.htmlId}}>
+        {{feature.name}}
+      </div>
+      {{setParams(feature.htmlId)}}
+      <br>
     </div>
-    <br>
-    <br>
-  </div>
-
+  </ng-container>
 </div>
 <div>
   <button (click)="saveConnections()">Save</button>
+  <button (click)="createFeature()">New Feature</button>
 </div>
-
-<!--
-<div class="customBox" id="Source">
-      Source
-    </div>
-    <div class="customBox" id="Target1" style="left: 30%">
-      Target 1
-    </div>
-
-      <div class="customBox" id="Target2" style="left: 60%">
-      Target 2
-    </div>
--->
