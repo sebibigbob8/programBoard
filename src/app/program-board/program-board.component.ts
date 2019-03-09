@@ -49,10 +49,7 @@ export class ProgramBoardComponent implements AfterViewInit {
 
   ngAfterViewInit() {
     this.jsPlumbInstance = jsPlumb.getInstance();
-    /*
-     this.jsPlumbInstance.draggable(['Source', 'Target1', 'Target2']);
-     this.jsPlumbInstance.addEndpoints(['Source', 'Target1', 'Target2'], [this.sourcePoint, this.endPoint]); */
-    // this.drawDependencies();
+    this.drawDependencies();
   }
 
   drawDependencies() {
@@ -60,11 +57,9 @@ export class ProgramBoardComponent implements AfterViewInit {
       for (const dependence of Object.values(dependencies)) {
         console.log(dependence.sourceId);
         this.jsPlumbInstance.connect({
-          source: dependence.sourceId,
-          target: dependence.targetId,
-          anchor: ['Right', 'Left']
+          uuids: [`${dependence.sourceId}-source`, `${dependence.targetId}-end`]
         });
-      }
+      }// jsPlumb.connect({ uuids:["ep0","ep1"] });
     });
   }
 
@@ -72,7 +67,6 @@ export class ProgramBoardComponent implements AfterViewInit {
     this.http.get(this.global.urlApi + 'features').subscribe(featuresGet => {
       for (const feature of Object.values(featuresGet)) {
         this.features.push(feature);
-        //this.jsPlumbInstance.addEndpoints(feature.htmlId, [this.sourcePoint, this.endPoint]);
       }
       this.featuresLoaded = true;
       console.log('Array build');
@@ -85,10 +79,13 @@ export class ProgramBoardComponent implements AfterViewInit {
     const found = this.alreadyDrag.find(function (element) {
       return element === htmlId;
     });
-    if (typeof found === 'undefined') {
-      this.jsPlumbInstance.draggable(htmlId);
-      this.alreadyDrag.push(htmlId);
+    if (typeof found !== 'undefined') {
+      return;
     }
+    this.jsPlumbInstance.draggable(htmlId);
+    this.jsPlumbInstance.addEndpoint(htmlId, this.sourcePoint, {uuid: `${htmlId}-source`});
+    this.jsPlumbInstance.addEndpoint(htmlId, this.endPoint, {uuid: `${htmlId}-end`});
+    this.alreadyDrag.push(htmlId);
   }
 
   createTblConnections() {
