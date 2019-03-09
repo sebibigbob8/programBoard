@@ -52,17 +52,10 @@ export class ProgramBoardComponent implements AfterViewInit {
     this.drawDependencies();
   }
 
-  drawDependencies() {
-    this.http.get(this.global.urlApi + 'dependencies').subscribe(dependencies => {
-      for (const dependence of Object.values(dependencies)) {
-        console.log(dependence.sourceId);
-        this.jsPlumbInstance.connect({
-          uuids: [`${dependence.sourceId}-source`, `${dependence.targetId}-end`]
-        });
-      }// jsPlumb.connect({ uuids:["ep0","ep1"] });
-    });
-  }
-
+  /**
+   * Retrieve all features from the API and save it in an array
+   * Once they are all downloaded, the html elements are crated
+   */
   getFeatures() {
     this.http.get(this.global.urlApi + 'features').subscribe(featuresGet => {
       for (const feature of Object.values(featuresGet)) {
@@ -74,6 +67,25 @@ export class ProgramBoardComponent implements AfterViewInit {
       console.error(err);
     });
   }
+
+  /**
+   * Retrieve all dependencies from the API and draw connections between features with jsPlumb
+   */
+  drawDependencies() {
+    this.http.get(this.global.urlApi + 'dependencies').subscribe(dependencies => {
+      for (const dependence of Object.values(dependencies)) {
+        console.log(dependence.sourceId);
+        this.jsPlumbInstance.connect({
+          uuids: [`${dependence.sourceId}-source`, `${dependence.targetId}-end`]
+        });
+      }
+    });
+  }
+
+  /**
+   * Set jsPlumb attribute to html elements
+   * htmlId
+   */
 
   setParams(htmlId) {
     const found = this.alreadyDrag.find(function (element) {
@@ -88,36 +100,43 @@ export class ProgramBoardComponent implements AfterViewInit {
     this.alreadyDrag.push(htmlId);
   }
 
-  createTblConnections() {
-    const tblConnections = this.jsPlumbInstance.getAllConnections();
-    if (!Array.isArray(tblConnections)) {
-      console.log('Drakeee ?! Array?!');
-      return;
-    }
-    if (!tblConnections.length) {
-      console.log('No connections');
-      return;
-    }
-    this.connections = [];
-    for (const connection of Object.values(tblConnections)) {
-      this.connections.push({sourceId: connection.sourceId, targetId: connection.targetId});
-    }
-  }
-
+  /**
+   * Delete dependencies and save the new ones
+   */
   saveConnections() {
     this.createTblConnections();
     if (!Array.isArray(this.connections)) {
       console.error('Not a correct array');
       return;
     }
-    for (const connection of Object.values(this.connections)) {
-      this.connectionRequest.sourceId = connection.sourceId;
-      this.connectionRequest.targetId = connection.targetId;
-      this.http.post(this.global.urlApi + 'dependencies', this.connectionRequest).subscribe(newConnection => {
-        console.log('The new connection', newConnection);
-      }, error1 => {
-        console.error(error1);
-      });
+    this.http.delete(this.global.urlApi + 'dependencies').subscribe(deleted => {
+      console.log('Deleted', deleted);
+      for (const connection of Object.values(this.connections)) {
+        this.connectionRequest.sourceId = connection['sourceId'];
+        this.connectionRequest.targetId = connection['targetId'];
+        this.http.post(this.global.urlApi + 'dependencies', this.connectionRequest).subscribe(newConnection => {
+          console.log('The new connection', newConnection);
+        }, error1 => {
+          console.error(error1);
+        });
+      }
+    }, err => {
+      console.error('Error during dependencies deleting', err);
+    });
+  }
+
+  /**
+   * Create the array where dependencies are stored
+   */
+  createTblConnections() {
+    const tblConnections = this.jsPlumbInstance.getAllConnections();
+    if (!Array.isArray(tblConnections)) {
+      console.log('Drakeee ?! Array?!');
+      return;
+    }
+    this.connections = [];
+    for (const connection of Object.values(tblConnections)) {
+      this.connections.push({sourceId: connection.sourceId, targetId: connection.targetId});
     }
   }
 }
