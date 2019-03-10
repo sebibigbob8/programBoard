@@ -1,10 +1,11 @@
-import {AfterViewChecked, AfterViewInit, Component, OnDestroy, OnInit} from '@angular/core';
+import {AfterViewInit, Component, ElementRef, ViewChild} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
-import {Connections} from 'jsplumb';
 import {ConnectionRequest} from '../../models/connection-request';
 import {GlobalVarService} from '../global-var.service';
+import {BoardComponent} from '../board/board.component';
 
 declare var jsPlumb: any;
+declare var $: any;
 
 
 @Component({
@@ -13,14 +14,14 @@ declare var jsPlumb: any;
   styleUrls: ['./program-board.component.css']
 })
 
-
 export class ProgramBoardComponent implements AfterViewInit {
-
   jsPlumbInstance;
   connections;
   features;
   featuresLoaded;
   alreadyDrag;
+  mouseX;
+  mouseY;
   sourcePoint = {
     endpoint: 'Rectangle',
     paintStyle: {width: 15, height: 10, fill: '#666'},
@@ -38,18 +39,50 @@ export class ProgramBoardComponent implements AfterViewInit {
   };
   connectionRequest: ConnectionRequest;
 
-  constructor(private http: HttpClient, public global: GlobalVarService) {
+  constructor(private http: HttpClient, public global: GlobalVarService, private elementRef: ElementRef) {
     this.connections = new Array();
     this.features = new Array();
     this.alreadyDrag = new Array();
     this.connectionRequest = new ConnectionRequest();
     this.getFeatures();
     this.featuresLoaded = false;
+    this.mouseX = 0;
+    this.mouseY = 0;
   }
 
   ngAfterViewInit() {
     this.jsPlumbInstance = jsPlumb.getInstance();
     this.drawDependencies();
+
+
+    $(document).ready(function () {
+      let isDragging = false;
+      let wasDragging = false;
+      $('.customBox')
+        .mousedown(function () {
+          isDragging = false;
+        })
+        .mousemove(function () {
+          isDragging = true;
+        })
+        .mouseup(function (e) {
+          wasDragging = isDragging;
+          isDragging = false;
+          // TODO: Now we got the mouseUp exact position. Next step is to trigger an event on the correct board cell
+          if (wasDragging) {
+            $('.customBox').mousemove(function (b) {
+              if (wasDragging) {
+                console.log(b.pageX, b.pageY);
+                wasDragging = false;
+                $('.boardCell').trigger(e);
+              }
+            });
+          }
+        });
+    });
+    $('.customBox').on('hoverMe', function (e) {
+      console.log('EHHH');
+    });
   }
 
   /**
@@ -98,6 +131,8 @@ export class ProgramBoardComponent implements AfterViewInit {
     this.jsPlumbInstance.addEndpoint(htmlId, this.sourcePoint, {uuid: `${htmlId}-source`});
     this.jsPlumbInstance.addEndpoint(htmlId, this.endPoint, {uuid: `${htmlId}-end`});
     this.alreadyDrag.push(htmlId);
+
+    document.getElementById(htmlId).contentEditable = 'true';
   }
 
   /**
@@ -139,4 +174,29 @@ export class ProgramBoardComponent implements AfterViewInit {
       this.connections.push({sourceId: connection.sourceId, targetId: connection.targetId});
     }
   }
+
+  createFeature() {
+    this.features.push({name: 'BAHH', htmlId: 'BAAAAAAAAAAAh'});
+  }
+
+  doElsCollide = function (feature, cell) {
+    feature.offsetBottom = feature.offsetTop + feature.offsetHeight;
+    feature.offsetRight = feature.offsetLeft + feature.offsetWidth;
+    cell.offsetBottom = cell.offsetTop + cell.offsetHeight;
+    cell.offsetRight = cell.offsetLeft + cell.offsetWidth;
+
+    return !((feature.offsetBottom < cell.offsetTop) ||
+      (feature.offsetTop > cell.offsetBottom) ||
+      (feature.offsetRight < cell.offsetLeft) ||
+      (feature.offsetLeft > cell.offsetRight));
+  };
+
 }
+
+/**
+ * TODO :
+ * Editable feature
+ * save new feature
+ * generate front ID
+ * Limit the draggable area to the center. So the mouseup's position will always be at the correct place
+ */

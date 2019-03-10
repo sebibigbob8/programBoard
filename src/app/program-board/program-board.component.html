@@ -1,13 +1,18 @@
+
 <div class="container" id="Board">
   <ng-container *ngIf="featuresLoaded">
-    <div *ngFor="let feature of this.features">
-      <div class="customBox" id={{feature.htmlId}}>
+    <div *ngFor="let feature of this.features" contenteditable="true">
+      <div  class="customBox" id={{feature.htmlId}}>
         {{feature.name}}
       </div>
       {{setParams(feature.htmlId)}}
       <br>
     </div>
   </ng-container>
+</div>
+<div>
+  <div id="newFeature">
+  </div>
 </div>
 <div>
   <button (click)="saveConnections()">Save</button>

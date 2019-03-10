@@ -26,7 +26,8 @@
               "src/styles.css"
             ],
             "scripts": [
-              "node_modules/jsplumb/dist/js/jsplumb.js"
+              "node_modules/jsplumb/dist/js/jsplumb.js",
+              "node_modules/jquery/dist/jquery.js"
             ]
           },
           "configurations": {

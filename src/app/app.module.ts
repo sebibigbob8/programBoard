@@ -11,11 +11,13 @@ import {BrowserAnimationsModule, NoopAnimationsModule} from '@angular/platform-b
 import {ProgramBoardComponent} from './program-board/program-board.component';
 import {NgbModule} from '@ng-bootstrap/ng-bootstrap';
 import {HttpClientModule} from '@angular/common/http';
+import { BoardComponent } from './board/board.component';
 
 
 const appRoutes: Routes = [
   {path: 'graph', component: GraphComponent},
   {path: 'programBoard', component: ProgramBoardComponent},
+  {path: 'board', component: BoardComponent},
   {
     path: '',
     redirectTo: '/',
@@ -28,6 +30,7 @@ const appRoutes: Routes = [
     AppComponent,
     GraphComponent,
     ProgramBoardComponent,
+    BoardComponent,
   ],
   imports: [
     BrowserModule,

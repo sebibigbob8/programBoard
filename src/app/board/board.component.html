@@ -1,0 +1,18 @@
+<div>
+  <table #boardElem id="board" *ngIf="isReadyIteration && isReadyTeam">
+    <caption>Program-Board</caption>
+    <tr id="iterationsLine">
+      <th></th>
+      <th *ngFor="let iteration of this.iterations">{{iteration.number}}</th>
+    </tr>
+    <tr id="milestone">
+      <td>Milestone</td>
+      <td *ngFor="let iteration of this.iterations"></td>
+    </tr>
+    <tr *ngFor="let team of this.teams">
+      <td class="teamNameCell">{{team.name}}</td>
+      <td class="boardCell"*ngFor="let iteration of this.iterations" [attr.data-iteration]="iteration.number" [attr.data-team]="team.name"></td>
+    </tr>
+  </table>
+</div>
+
