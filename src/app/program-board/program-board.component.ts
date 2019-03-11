@@ -223,7 +223,6 @@ export class ProgramBoardComponent implements AfterViewInit {
     }, err => {
       console.error(err);
     });
-
   }
 }
 

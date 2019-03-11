@@ -105,12 +105,13 @@ Le but est que l'html de votre component se base sur ces deux variables afin de 
   </tr>
   <tr *ngFor="let team of this.teams">
     <td class="teamNameCell">{{team.name}}</td>
-    <td class="boardCell"*ngFor="let iteration of this.iterations" id="{{iteration.number}}-{{team.name}}"></td>
+    <td class="boardCell"*ngFor="let iteration of this.iterations" id="{{iteration.number}}-{{team.name}}" [attr.data-iteration]="iteration.number" [attr.data-team]="team.name"></td>
   </tr>
 </table>
 ```
 `*ngFor` permet de faire une boucle sur une variable éxistant dans le javascript.
 Ici le 1er ngFor permet de créer les colonnes d'itérations, le 2ème permet de créer toutes les cellules.
+Les deux attributs `data-...` permettent de stocker la position de la cellule dans le html.
 
 ###Sauvegarder la position des post-its
 
@@ -133,3 +134,72 @@ import * as $ from 'jquery';
   ```
   declare var $: any;
   ```
+
+Il faut maintennt détecter le moment du drop.
+```javascript
+$('.classOfElem')
+        .mousedown(function () {
+          isDragging = false;
+        })
+        .mousemove(function () {
+          isDragging = true;
+        })
+        .mouseup(function (e) {
+          wasDragging = isDragging;
+          isDragging = false;
+          if (wasDragging) {
+            $('.classOfElem').mousemove(function (b) {
+              if (wasDragging) {
+                const customClick = new jQuery.Event('dropFeature');
+                customClick.pageX = b.pageX;
+                customClick.pageY = b.pageY;
+                $('.boardCell').trigger(customClick, $(this).attr('id'));
+                wasDragging = false;
+              }
+            });
+          }
+        });
+```
+Au moment du drop, un évènement custom est créer sur les cellules du tableau. En paramètre sont passé les positions x et y de la souris au moment du drop.
+
+Il faut maintenant réceptionner l'évènement.
+```javascript
+$('.boardCell').on('dropFeature', (e, featureId) => {
+        const feature = e;
+        const cell = e.currentTarget;
+        cell.offsetBottom = cell.offsetTop + cell.offsetHeight;
+        cell.offsetRight = cell.offsetLeft + cell.offsetWidth;
+        if ((feature.pageY > cell.offsetTop) &&
+          (feature.pageY < cell.offsetBottom) &&
+          (feature.pageX > cell.offsetLeft) &&
+          (feature.pageX < cell.offsetRight)) {
+          const cellIteration = $(cell).attr('data-iteration');
+          const cellTeam = $(cell).attr('data-team');
+          this.updateFeature(featureId, cellTeam, cellIteration);
+        }
+      });
+```
+Le ``IF`` permet de détecter dans quelle cellule l'évènement custom est lancé.
+
+Voic le contenu de ``updateFeature``:
+```javascript
+  updateFeature(featureId, team, iteration) {
+    let mongodId = null;
+    this.features.find(function (element) {
+      if (element.htmlId === featureId) {
+        element.team = team;
+        element.iteration = iteration;
+        mongodId = element._id;
+      }
+    });
+    this.http.patch(`${this.global.urlApi}features/${mongodId}`, {
+      'team': team,
+      'iteration': iteration
+    }).subscribe(featureUpdated => {
+      console.log(featureUpdated);
+    }, err => {
+      console.error(err);
+    });
+  }
+```
+Cette fonction met à jour le tableau puis le backend.
