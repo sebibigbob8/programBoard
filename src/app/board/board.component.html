@@ -11,7 +11,7 @@
     </tr>
     <tr *ngFor="let team of this.teams">
       <td class="teamNameCell">{{team.name}}</td>
-      <td class="boardCell"*ngFor="let iteration of this.iterations" [attr.data-iteration]="iteration.number" [attr.data-team]="team.name"></td>
+      <td class="boardCell"*ngFor="let iteration of this.iterations"  [attr.data-iteration]="iteration.number" [attr.data-team]="team.name" id="{{iteration.number}}-{{team.name}}"></td>
     </tr>
   </table>
 </div>

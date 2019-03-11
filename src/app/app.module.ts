@@ -12,6 +12,7 @@ import {ProgramBoardComponent} from './program-board/program-board.component';
 import {NgbModule} from '@ng-bootstrap/ng-bootstrap';
 import {HttpClientModule} from '@angular/common/http';
 import { BoardComponent } from './board/board.component';
+import * as $ from 'jquery';
 
 
 const appRoutes: Routes = [

@@ -4,9 +4,8 @@ import {ConnectionRequest} from '../../models/connection-request';
 import {GlobalVarService} from '../global-var.service';
 import {BoardComponent} from '../board/board.component';
 
-declare var jsPlumb: any;
 declare var $: any;
-
+declare var jsPlumb: any;
 
 @Component({
   selector: 'app-program-board',
@@ -50,12 +49,37 @@ export class ProgramBoardComponent implements AfterViewInit {
     this.mouseY = 0;
   }
 
+
+  /**
+   * TODO :
+   * !!!!!!!Limit the draggable area to the center. So the mouseup's position will always be at the correct place
+   * Editable feature
+   * save new feature
+   * generate front ID
+   * new jquery draggable syntax
+   */
   ngAfterViewInit() {
     this.jsPlumbInstance = jsPlumb.getInstance();
     this.drawDependencies();
 
 
     $(document).ready(function () {
+      $('.boardCell').on('dropFeature', function (e, featureId) {
+        const feature = e;
+        const cell = $(this)[0];
+        const attr = $(this).attr('data-iteration');
+        cell.offsetBottom = cell.offsetTop + cell.offsetHeight;
+        cell.offsetRight = cell.offsetLeft + cell.offsetWidth;
+        if ((feature.pageY > cell.offsetTop) &&
+          (feature.pageY < cell.offsetBottom) &&
+          (feature.pageX > cell.offsetLeft) &&
+          (feature.pageX < cell.offsetRight)) {
+          const cellIteration = $(this).attr('data-iteration');
+          const cellTeam = $(this).attr('data-team');
+          console.log('feature', featureId, '/team', cellTeam, '/iteration', cellIteration);
+        }
+
+      });
       let isDragging = false;
       let wasDragging = false;
       $('.customBox')
@@ -68,20 +92,19 @@ export class ProgramBoardComponent implements AfterViewInit {
         .mouseup(function (e) {
           wasDragging = isDragging;
           isDragging = false;
-          // TODO: Now we got the mouseUp exact position. Next step is to trigger an event on the correct board cell
           if (wasDragging) {
             $('.customBox').mousemove(function (b) {
               if (wasDragging) {
-                console.log(b.pageX, b.pageY);
+                const customClick = new jQuery.Event('dropFeature');
+                customClick.pageX = b.pageX;
+                customClick.pageY = b.pageY;
+                $('.boardCell').trigger(customClick, $(this).attr('id'));
                 wasDragging = false;
-                $('.boardCell').trigger(e);
               }
             });
           }
         });
-    });
-    $('.customBox').on('hoverMe', function (e) {
-      console.log('EHHH');
+
     });
   }
 
@@ -95,7 +118,7 @@ export class ProgramBoardComponent implements AfterViewInit {
         this.features.push(feature);
       }
       this.featuresLoaded = true;
-      console.log('Array build');
+      console.log(this.features);
     }, err => {
       console.error(err);
     });
@@ -107,7 +130,6 @@ export class ProgramBoardComponent implements AfterViewInit {
   drawDependencies() {
     this.http.get(this.global.urlApi + 'dependencies').subscribe(dependencies => {
       for (const dependence of Object.values(dependencies)) {
-        console.log(dependence.sourceId);
         this.jsPlumbInstance.connect({
           uuids: [`${dependence.sourceId}-source`, `${dependence.targetId}-end`]
         });
@@ -116,11 +138,12 @@ export class ProgramBoardComponent implements AfterViewInit {
   }
 
   /**
-   * Set jsPlumb attribute to html elements
+   * Set jsPlumb attributes to html elements
    * htmlId
    */
 
-  setParams(htmlId) {
+  setParams(theFeature) {
+    const htmlId = theFeature.htmlId;
     const found = this.alreadyDrag.find(function (element) {
       return element === htmlId;
     });
@@ -131,8 +154,18 @@ export class ProgramBoardComponent implements AfterViewInit {
     this.jsPlumbInstance.addEndpoint(htmlId, this.sourcePoint, {uuid: `${htmlId}-source`});
     this.jsPlumbInstance.addEndpoint(htmlId, this.endPoint, {uuid: `${htmlId}-end`});
     this.alreadyDrag.push(htmlId);
+    if (typeof theFeature.team === 'undefined' || typeof theFeature.iteration === 'undefined') {
+      return;
+    }
+    console.log(theFeature.team);
+    const escapeIteration = theFeature.iteration.toString().replace(/\./g, '\\.');
+    const stringSelector = `#${escapeIteration}-${theFeature.team}`;
+    $(document).ready(function () {
+      $('#login').appendTo(stringSelector); // #1\\.2-Alpha
+    });
+    console.log(stringSelector);
+    console.log('#2\\\\.5-Alpha');
 
-    document.getElementById(htmlId).contentEditable = 'true';
   }
 
   /**
@@ -166,7 +199,7 @@ export class ProgramBoardComponent implements AfterViewInit {
   createTblConnections() {
     const tblConnections = this.jsPlumbInstance.getAllConnections();
     if (!Array.isArray(tblConnections)) {
-      console.log('Drakeee ?! Array?!');
+      console.error('Drakeee ?! Array?!');
       return;
     }
     this.connections = [];
@@ -178,25 +211,5 @@ export class ProgramBoardComponent implements AfterViewInit {
   createFeature() {
     this.features.push({name: 'BAHH', htmlId: 'BAAAAAAAAAAAh'});
   }
-
-  doElsCollide = function (feature, cell) {
-    feature.offsetBottom = feature.offsetTop + feature.offsetHeight;
-    feature.offsetRight = feature.offsetLeft + feature.offsetWidth;
-    cell.offsetBottom = cell.offsetTop + cell.offsetHeight;
-    cell.offsetRight = cell.offsetLeft + cell.offsetWidth;
-
-    return !((feature.offsetBottom < cell.offsetTop) ||
-      (feature.offsetTop > cell.offsetBottom) ||
-      (feature.offsetRight < cell.offsetLeft) ||
-      (feature.offsetLeft > cell.offsetRight));
-  };
-
 }
 
-/**
- * TODO :
- * Editable feature
- * save new feature
- * generate front ID
- * Limit the draggable area to the center. So the mouseup's position will always be at the correct place
- */
