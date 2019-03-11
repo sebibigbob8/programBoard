@@ -160,20 +160,6 @@ export class ProgramBoardComponent implements AfterViewInit {
       this.alreadyDrag.push(htmlId);
     });
   }
-
-  correctPosition(theFeature) {
-    if (typeof theFeature.team === 'undefined' || typeof theFeature.iteration === 'undefined') {
-      return;
-    }
-    const escapeIteration = theFeature.iteration.toString().replace(/\./g, '\\.');
-    const stringSelector = `#${escapeIteration}-${theFeature.team}`;
-    // Move element to the correct cell
-    $(`#${theFeature.htmlId}`).appendTo(stringSelector);
-    this.jsPlumbInstance.repaintEverything();
-
-  }
-
-
   /**
    * Delete dependencies and save the new ones
    */
@@ -214,6 +200,12 @@ export class ProgramBoardComponent implements AfterViewInit {
     }
   }
 
+  /**
+   * Update feature's position in the html table
+   * @param featureId
+   * @param team
+   * @param iteration
+   */
   updateFeature(featureId, team, iteration) {
     let mongodId = null;
     this.features.find(function (element) {
