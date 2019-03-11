@@ -1,8 +1,7 @@
-import {AfterViewInit, Component, ElementRef, ViewChild} from '@angular/core';
+import {AfterViewInit, Component, ElementRef} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import {ConnectionRequest} from '../../models/connection-request';
 import {GlobalVarService} from '../global-var.service';
-import {BoardComponent} from '../board/board.component';
 
 declare var $: any;
 declare var jsPlumb: any;
@@ -55,30 +54,28 @@ export class ProgramBoardComponent implements AfterViewInit {
    * !!!!!!!Limit the draggable area to the center. So the mouseup's position will always be at the correct place
    * Editable feature
    * save new feature
-   * generate front ID
    * new jquery draggable syntax
    */
   ngAfterViewInit() {
     this.jsPlumbInstance = jsPlumb.getInstance();
     this.drawDependencies();
 
-
-    $(document).ready(function () {
-      $('.boardCell').on('dropFeature', function (e, featureId) {
+    $(document).ready(() => {
+      $('.boardCell').on('dropFeature', (e, featureId) => {
         const feature = e;
-        const cell = $(this)[0];
-        const attr = $(this).attr('data-iteration');
+        const cell = e.currentTarget;
         cell.offsetBottom = cell.offsetTop + cell.offsetHeight;
         cell.offsetRight = cell.offsetLeft + cell.offsetWidth;
         if ((feature.pageY > cell.offsetTop) &&
           (feature.pageY < cell.offsetBottom) &&
           (feature.pageX > cell.offsetLeft) &&
           (feature.pageX < cell.offsetRight)) {
-          const cellIteration = $(this).attr('data-iteration');
-          const cellTeam = $(this).attr('data-team');
-          console.log('feature', featureId, '/team', cellTeam, '/iteration', cellIteration);
+          const cellIteration = $(cell).attr('data-iteration');
+          const cellTeam = $(cell).attr('data-team');
+          $(`#${featureId}`).attr('data-team', cellTeam);
+          $(`#${featureId}`).attr('data-iteration', cellIteration);
+          this.updateFeature(featureId, cellTeam, cellIteration);
         }
-
       });
       let isDragging = false;
       let wasDragging = false;
@@ -104,7 +101,6 @@ export class ProgramBoardComponent implements AfterViewInit {
             });
           }
         });
-
     });
   }
 
@@ -130,6 +126,7 @@ export class ProgramBoardComponent implements AfterViewInit {
   drawDependencies() {
     this.http.get(this.global.urlApi + 'dependencies').subscribe(dependencies => {
       for (const dependence of Object.values(dependencies)) {
+        console.log(dependence);
         this.jsPlumbInstance.connect({
           uuids: [`${dependence.sourceId}-source`, `${dependence.targetId}-end`]
         });
@@ -143,30 +140,39 @@ export class ProgramBoardComponent implements AfterViewInit {
    */
 
   setParams(theFeature) {
-    const htmlId = theFeature.htmlId;
-    const found = this.alreadyDrag.find(function (element) {
-      return element === htmlId;
-    });
-    if (typeof found !== 'undefined') {
-      return;
-    }
-    this.jsPlumbInstance.draggable(htmlId);
-    this.jsPlumbInstance.addEndpoint(htmlId, this.sourcePoint, {uuid: `${htmlId}-source`});
-    this.jsPlumbInstance.addEndpoint(htmlId, this.endPoint, {uuid: `${htmlId}-end`});
-    this.alreadyDrag.push(htmlId);
     if (typeof theFeature.team === 'undefined' || typeof theFeature.iteration === 'undefined') {
       return;
     }
-    console.log(theFeature.team);
     const escapeIteration = theFeature.iteration.toString().replace(/\./g, '\\.');
     const stringSelector = `#${escapeIteration}-${theFeature.team}`;
-    $(document).ready(function () {
-      $('#login').appendTo(stringSelector); // #1\\.2-Alpha
+    // Move element to the correct cell
+    $(`#${theFeature.htmlId}`).appendTo(stringSelector).append(() => {
+      const htmlId = theFeature.htmlId;
+      const found = this.alreadyDrag.find(function (element) {
+        return element === htmlId;
+      });
+      if (typeof found !== 'undefined') {
+        return;
+      }
+      this.jsPlumbInstance.draggable(htmlId);
+      this.jsPlumbInstance.addEndpoint(htmlId, this.sourcePoint, {uuid: `${htmlId}-source`});
+      this.jsPlumbInstance.addEndpoint(htmlId, this.endPoint, {uuid: `${htmlId}-end`});
+      this.alreadyDrag.push(htmlId);
     });
-    console.log(stringSelector);
-    console.log('#2\\\\.5-Alpha');
+  }
+
+  correctPosition(theFeature) {
+    if (typeof theFeature.team === 'undefined' || typeof theFeature.iteration === 'undefined') {
+      return;
+    }
+    const escapeIteration = theFeature.iteration.toString().replace(/\./g, '\\.');
+    const stringSelector = `#${escapeIteration}-${theFeature.team}`;
+    // Move element to the correct cell
+    $(`#${theFeature.htmlId}`).appendTo(stringSelector);
+    this.jsPlumbInstance.repaintEverything();
 
   }
+
 
   /**
    * Delete dependencies and save the new ones
@@ -208,8 +214,24 @@ export class ProgramBoardComponent implements AfterViewInit {
     }
   }
 
-  createFeature() {
-    this.features.push({name: 'BAHH', htmlId: 'BAAAAAAAAAAAh'});
+  updateFeature(featureId, team, iteration) {
+    let mongodId = null;
+    this.features.find(function (element) {
+      if (element.htmlId === featureId) {
+        element.team = team;
+        element.iteration = iteration;
+        mongodId = element._id;
+      }
+    });
+    this.http.patch(`${this.global.urlApi}features/${mongodId}`, {
+      'team': team,
+      'iteration': iteration
+    }).subscribe(featureUpdated => {
+      console.log(featureUpdated);
+    }, err => {
+      console.error(err);
+    });
+
   }
 }
 
